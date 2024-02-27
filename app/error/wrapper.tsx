@@ -43,6 +43,38 @@ function hasDuplicateError(
 	return duplicateErrorFound;
 }
 
+type ServerReturn = {
+	data: string | undefined;
+	errorProperties: ErrorProperties | undefined;
+};
+
+async function submitError(
+	errorProperties: ErrorProperties
+): Promise<ServerReturn> {
+	try {
+		const response = await fetch('./api/error', {
+			method: 'POST',
+			body: JSON.stringify(errorProperties),
+			headers: {
+				'content-type': 'application/json',
+			},
+		});
+
+		const data: string = await response.json(); // work on server end point
+
+		return {
+			data,
+			errorProperties: undefined,
+		};
+	} catch (error) {
+		const errorProperties = defineError(Error);
+		return {
+			data: undefined,
+			errorProperties,
+		};
+	}
+}
+
 export default function ErrorBoundaryWrapper({
 	children,
 }: {
@@ -52,33 +84,18 @@ export default function ErrorBoundaryWrapper({
 
 	function logError(error: Error, info: ErrorInfo) {
 		const errorProperties = defineError(error);
-		
+
 		const foundDuplicateError = hasDuplicateError(
 			errorProperties,
 			getErrorRecord
 		);
 
-		
 		if (!foundDuplicateError) {
-			fetch('./api/error', {
-				method: 'POST',
-				body: JSON.stringify(error),
-				headers: {
-					'content-type': 'application/json',
-				},
-			})
-				.then((data) => {
-					data.json()
-						.then((data) => {
-							console.log(data);
-						})
-						.catch((data) => {
-							console.log(data);
-						});
-				})
-				.catch((error) => {
-					console.log(error);
-				});
+			const newList = [...getErrorRecord, errorProperties];
+
+			setErrorRecord(newList);
+
+			// continue with submit errors
 		}
 	}
 
