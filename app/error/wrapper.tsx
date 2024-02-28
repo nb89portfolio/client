@@ -6,6 +6,8 @@ import ErrorFallback from './fallback';
 import defineError, { ErrorProperties } from './definedError';
 import hasDuplicateError from './hasDuplicateError';
 import submitError from './submitError';
+import ErrorOutput from './output';
+import { ServerReturn } from '../api/error/route';
 
 export default function ErrorBoundaryWrapper({
 	children,
@@ -13,7 +15,10 @@ export default function ErrorBoundaryWrapper({
 	children: ReactNode;
 }) {
 	const [getErrorRecord, setErrorRecord] = useState<ErrorProperties[]>([]);
-	const [getServerState, setServerState] = useState<string>('');
+	const [getServerState, setServerState] = useState<ServerReturn>({
+		data: '',
+		errorProperties: undefined,
+	});
 
 	function logError(error: Error, info: ErrorInfo) {
 		const errorProperties = defineError(error);
@@ -30,29 +35,37 @@ export default function ErrorBoundaryWrapper({
 
 			submitError(errorProperties)
 				.then((response) => {
-					const data =
-						response.data !== undefined
-							? response.data
-							: 'Error: Server failed to process error.';
-
-					setServerState(data);
+					setServerState(response);
 				})
 				.catch((error) => {
 					const { name, message, stack } = defineError(error);
 
-					const data = `Client failed to report to server about error.\n${name}.\n${message}.\n${stack}.\n`;
+					const data = {
+						data: undefined,
+						errorProperties: {
+							name,
+							message,
+							stack,
+						},
+					};
 
 					setServerState(data);
 				});
 		} else {
-			const data = 'This error has already been reported.';
+			const data = {
+				data: 'This error has already been reported.',
+				errorProperties: undefined,
+			};
 
 			setServerState(data);
 		}
 	}
 
 	function resetState() {
-		setServerState('');
+		setServerState({
+			data: '',
+			errorProperties: undefined,
+		});
 	}
 
 	return (
@@ -63,7 +76,7 @@ export default function ErrorBoundaryWrapper({
 				onReset={resetState}>
 				{children}
 			</ErrorBoundary>
-			<output>{getServerState}</output>
+			<ErrorOutput props={getServerState}></ErrorOutput>
 		</>
 	);
 }

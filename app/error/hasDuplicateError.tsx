@@ -1,10 +1,10 @@
 import { ErrorProperties } from './definedError';
 
-export default function hasDuplicateError(
+function findDuplicateError(
 	error: ErrorProperties,
 	errorList: ErrorProperties[]
-): boolean {
-	const foundDuplicateErrors = errorList.find((recordedError) => {
+): ErrorProperties | undefined {
+	return errorList.find((recordedError) => {
 		if (error.name === recordedError.name) {
 			if (error.message === recordedError.message) {
 				if (error.stack === recordedError.stack) {
@@ -13,8 +13,15 @@ export default function hasDuplicateError(
 			}
 		}
 	});
+}
 
-	const duplicateErrorFound = foundDuplicateErrors !== undefined;
+export default function hasDuplicateError(
+	error: ErrorProperties,
+	errorList: ErrorProperties[]
+): boolean {
+	const foundDuplicateError = findDuplicateError(error, errorList);
 
-	return duplicateErrorFound;
+	const hasDuplicateErrorFound = foundDuplicateError !== undefined;
+
+	return hasDuplicateErrorFound;
 }

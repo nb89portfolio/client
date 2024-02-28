@@ -1,9 +1,5 @@
+import { ServerReturn } from '../api/error/route';
 import defineError, { ErrorProperties } from './definedError';
-
-export type ServerReturn = {
-	data: string | undefined;
-	errorProperties: ErrorProperties | undefined;
-};
 
 export default async function submitError(
 	errorProperties: ErrorProperties
@@ -17,7 +13,7 @@ export default async function submitError(
 			},
 		});
 
-		const data: string = await response.json(); // work on server end point
+		const data: string = await response.json();
 
 		return {
 			data,
