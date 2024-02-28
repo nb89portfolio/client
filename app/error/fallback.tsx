@@ -1,8 +1,7 @@
 'use client';
 
 import { FallbackProps } from 'react-error-boundary';
-import { defineError } from './wrapper';
-
+import defineError from './definedError';
 
 
 export default function ErrorFallback({
@@ -10,6 +9,8 @@ export default function ErrorFallback({
 	resetErrorBoundary,
 }: FallbackProps) {
 	const { name, message, stack } = defineError(error);
+
+	console.log('rerendering fallback');
 
 	return (
 		<main>
