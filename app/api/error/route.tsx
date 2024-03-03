@@ -1,4 +1,6 @@
-import defineError, { ErrorProperties } from '@/app/error/definedError';
+import defineErrorProperties, {
+	ErrorProperties,
+} from '@/app/error/definedErrorProperties';
 import { PrismaClient } from '@prisma/client';
 
 export type ServerReturn = {
@@ -10,9 +12,8 @@ export async function POST(request: Request) {
 	try {
 		const clientRequest: ErrorProperties = await request.json();
 		const databaseClient = new PrismaClient();
-		
 	} catch (error) {
-		const { name, message, stack } = defineError(error);
+		const { name, message, stack } = defineErrorProperties(error);
 
 		const data = `Error name "${name}" \nwith error message "${message}" \nand error stack "${stack}"`;
 

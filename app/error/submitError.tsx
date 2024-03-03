@@ -1,5 +1,7 @@
 import { ServerReturn } from '../api/error/route';
-import defineError, { ErrorProperties } from './definedError';
+import defineErrorProperties, {
+	ErrorProperties,
+} from './definedErrorProperties';
 
 export default async function submitError(
 	errorProperties: ErrorProperties
@@ -20,7 +22,7 @@ export default async function submitError(
 			errorProperties: undefined,
 		};
 	} catch (error) {
-		const errorProperties = defineError(Error);
+		const errorProperties = defineErrorProperties(Error);
 		return {
 			data: undefined,
 			errorProperties,

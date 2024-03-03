@@ -1,4 +1,4 @@
-import { ErrorProperties } from './definedError';
+import { ErrorProperties } from './definedErrorProperties';
 
 function findDuplicateError(
 	error: ErrorProperties,
@@ -21,7 +21,5 @@ export default function hasDuplicateError(
 ): boolean {
 	const foundDuplicateError = findDuplicateError(error, errorList);
 
-	const hasDuplicateErrorFound = foundDuplicateError !== undefined;
-
-	return hasDuplicateErrorFound;
+	return foundDuplicateError !== undefined;
 }
