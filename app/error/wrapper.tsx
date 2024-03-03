@@ -11,16 +11,20 @@ import ErrorOutput from './output';
 import serverSubmit, { ServerResponse } from '../api/serverSubmit';
 import catchError from './catchError';
 
+const initialServerResponse: ServerResponse = {
+	data: '',
+	errorProperties: undefined,
+};
+
 export default function ErrorBoundaryWrapper({
 	children,
 }: {
 	children: ReactNode;
 }) {
 	const [getErrorRecord, setErrorRecord] = useState<ErrorProperties[]>([]);
-	const [getServerState, setServerState] = useState<ServerResponse>({
-		data: '',
-		errorProperties: undefined,
-	});
+	const [getServerState, setServerState] = useState<ServerResponse>(
+		initialServerResponse
+	);
 
 	function logError(error: Error, info: ErrorInfo) {
 		const errorProperties = defineErrorProperties(error);
@@ -49,10 +53,7 @@ export default function ErrorBoundaryWrapper({
 	}
 
 	function resetState() {
-		setServerState({
-			data: '',
-			errorProperties: undefined,
-		});
+		setServerState(initialServerResponse);
 	}
 
 	return (

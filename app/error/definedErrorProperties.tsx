@@ -12,12 +12,8 @@ function defineErrorString(
 }
 
 function defineErrorProperty(error: any, key: keyof ErrorProperties): string {
-	const isError = error instanceof Error;
-
-	if (isError) {
-		const isDefined = error[key] !== undefined;
-
-		if (isDefined) {
+	if (error instanceof Error) {
+		if (error[key] !== undefined) {
 			return error[key] as string;
 		} else {
 			return defineErrorString(key, 'undefined');

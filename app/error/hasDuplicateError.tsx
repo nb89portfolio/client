@@ -5,13 +5,13 @@ function findDuplicateError(
 	errorList: ErrorProperties[]
 ): ErrorProperties | undefined {
 	return errorList.find((recordedError) => {
-		if (error.name === recordedError.name) {
-			if (error.message === recordedError.message) {
-				if (error.stack === recordedError.stack) {
-					return recordedError;
-				}
-			}
-		}
+		return error.name === recordedError.name
+			? error.message === recordedError.message
+				? error.stack === recordedError.stack
+					? true
+					: false
+				: false
+			: false;
 	});
 }
 
@@ -19,7 +19,5 @@ export default function hasDuplicateError(
 	error: ErrorProperties,
 	errorList: ErrorProperties[]
 ): boolean {
-	const foundDuplicateError = findDuplicateError(error, errorList);
-
-	return foundDuplicateError !== undefined;
+	return findDuplicateError(error, errorList) !== undefined;
 }

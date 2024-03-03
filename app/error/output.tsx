@@ -2,14 +2,10 @@ import { ServerResponse } from '../api/serverSubmit';
 import { ErrorProperties } from './definedErrorProperties';
 
 function defineOutput(serverResponse: ServerResponse): string {
-	const isDefined = serverResponse.data !== undefined;
-
-	if (isDefined) {
+	if (serverResponse.data !== undefined) {
 		return serverResponse.data as string;
 	} else {
-		const isDefined = serverResponse.errorProperties !== undefined;
-
-		if (isDefined) {
+		if (serverResponse.errorProperties !== undefined) {
 			const { name, message, stack } =
 				serverResponse.errorProperties as ErrorProperties;
 
@@ -21,7 +17,5 @@ function defineOutput(serverResponse: ServerResponse): string {
 }
 
 export default function ErrorOutput({ props }: { props: ServerResponse }) {
-	const data = defineOutput(props);
-
-	return <output>{data}</output>;
+	return <output>{defineOutput(props)}</output>;
 }

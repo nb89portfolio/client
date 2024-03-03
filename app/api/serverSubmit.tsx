@@ -35,12 +35,8 @@ export default async function sendServer(
 	};
 
 	try {
-		const response = await fetch(route, fetchConfiguration);
-
-		const data = await response.json();
-
 		return {
-			data,
+			data: await (await fetch(route, fetchConfiguration)).json(),
 			errorProperties: undefined,
 		};
 	} catch (error) {
