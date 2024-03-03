@@ -1,7 +1,7 @@
-import { ServerReturn } from '../api/error/route';
+import { ServerResponse } from '../api/serverSubmit';
 import { ErrorProperties } from './definedErrorProperties';
 
-function defineOutput(serverResponse: ServerReturn): string {
+function defineOutput(serverResponse: ServerResponse): string {
 	const isDefined = serverResponse.data !== undefined;
 
 	if (isDefined) {
@@ -20,7 +20,7 @@ function defineOutput(serverResponse: ServerReturn): string {
 	}
 }
 
-export default function ErrorOutput({ props }: { props: ServerReturn }) {
+export default function ErrorOutput({ props }: { props: ServerResponse }) {
 	const data = defineOutput(props);
 
 	return <output>{data}</output>;

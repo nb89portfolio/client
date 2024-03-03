@@ -3,10 +3,7 @@ import defineErrorProperties, {
 } from '@/app/error/definedErrorProperties';
 import { PrismaClient } from '@prisma/client';
 
-export type ServerReturn = {
-	data: string | undefined;
-	errorProperties: ErrorProperties | undefined;
-};
+export type ErrorResponse = string;
 
 export async function POST(request: Request) {
 	try {

@@ -7,9 +7,9 @@ import defineErrorProperties, {
 	ErrorProperties,
 } from './definedErrorProperties';
 import hasDuplicateError from './hasDuplicateError';
-import submitError from './submitError';
 import ErrorOutput from './output';
-import { ServerReturn } from '../api/error/route';
+import serverSubmit, { ServerResponse } from '../api/serverSubmit';
+import catchError from './catchError';
 
 export default function ErrorBoundaryWrapper({
 	children,
@@ -17,7 +17,7 @@ export default function ErrorBoundaryWrapper({
 	children: ReactNode;
 }) {
 	const [getErrorRecord, setErrorRecord] = useState<ErrorProperties[]>([]);
-	const [getServerState, setServerState] = useState<ServerReturn>({
+	const [getServerState, setServerState] = useState<ServerResponse>({
 		data: '',
 		errorProperties: undefined,
 	});
@@ -31,36 +31,20 @@ export default function ErrorBoundaryWrapper({
 		);
 
 		if (!foundDuplicateError) {
-			const newList = [...getErrorRecord, errorProperties];
+			setErrorRecord([...getErrorRecord, errorProperties]);
 
-			setErrorRecord(newList);
-
-			submitError(errorProperties)
+			serverSubmit('./api/error', 'POST', errorProperties)
 				.then((response) => {
 					setServerState(response);
 				})
 				.catch((error) => {
-					const { name, message, stack } =
-						defineErrorProperties(error);
-
-					const data = {
-						data: undefined,
-						errorProperties: {
-							name,
-							message,
-							stack,
-						},
-					};
-
-					setServerState(data);
+					setServerState(catchError(error));
 				});
 		} else {
-			const data = {
+			setServerState({
 				data: 'This error has already been reported.',
 				errorProperties: undefined,
-			};
-
-			setServerState(data);
+			});
 		}
 	}
 
