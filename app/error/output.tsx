@@ -1,26 +1,23 @@
 import { ServerResponse } from '../api/serverSubmit';
-import { ErrorProperties } from './definedErrorProperties';
+import { DefinedError } from './definedError';
 
 function defineOutput(serverResponse: ServerResponse): string {
 	if (serverResponse.data !== undefined) {
 		return serverResponse.data as string;
 	} else {
-		const isDefined = serverResponse.errorProperties !== undefined;
+		const isDefined = serverResponse.definedError !== undefined;
 
 		if (isDefined) {
 			const { name, message, stack } =
-				serverResponse.errorProperties as ErrorProperties;
+				serverResponse.definedError as DefinedError;
 
-			const messageName = `Error name "${name}".\n`;
-			const messageMEssage = `Error message "${message}".\n`;
-			const messageStack = `Error stack "${stack}".\n`;
+			const errorName = `Error name "${name}".`;
+			const errorMessage = `Error message "${message}.`;
+			const errorStack = `Error stack "${stack}".`;
 
-			const buildMEssage = messageName + messageMEssage + messageStack;
-			return buildMEssage;
+			return errorName + `\n` + errorMessage + `\n` + errorStack;
 		} else {
-			const defaultMEssage = 'Error: System failed to report error.';
-
-			return defaultMEssage;
+			return 'Error: System failed to report error.';
 		}
 	}
 }

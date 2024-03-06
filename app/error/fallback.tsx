@@ -1,13 +1,13 @@
 'use client';
 
 import { FallbackProps } from 'react-error-boundary';
-import defineErrorProperties from './definedErrorProperties';
+import defineError from './definedError';
 
 export default function ErrorFallback({
 	error,
 	resetErrorBoundary,
 }: FallbackProps) {
-	const { name, message, stack } = defineErrorProperties(error);
+	const { name, message, stack } = defineError(error);
 
 	return (
 		<main>

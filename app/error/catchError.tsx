@@ -1,9 +1,9 @@
 import { ServerResponse } from '../api/serverSubmit';
-import defineErrorProperties from './definedErrorProperties';
+import defineError from './definedError';
 
 export default function catchError(error: any): ServerResponse {
-	const data = undefined;
-	const errorProperties = defineErrorProperties(error);
-
-	return { data, errorProperties };
+	return {
+		data: undefined,
+		definedError: defineError(error),
+	};
 }

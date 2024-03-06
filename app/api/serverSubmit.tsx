@@ -1,12 +1,10 @@
-import defineErrorProperties, {
-	ErrorProperties,
-} from '../error/definedErrorProperties';
+import defineError, { DefinedError } from '../error/definedError';
 import catchError from '../error/catchError';
 import { ErrorResponse } from './error/route';
 
 export type ServerResponse = {
 	data: ErrorResponse | undefined;
-	errorProperties: ErrorProperties | undefined;
+	definedError: DefinedError | undefined;
 };
 
 type ServerRoute = './api/error';
@@ -21,7 +19,7 @@ type FetchConfiguration = {
 	};
 };
 
-type ServerRequest = ErrorProperties;
+type ServerRequest = DefinedError;
 
 type SendServerRequest = {
 	route: ServerRoute;
@@ -40,8 +38,10 @@ export default async function sendServer(
 
 	try {
 		return {
-			data: await (await fetch(sendRequest.route, fetchConfiguration)).json(),
-			errorProperties: undefined,
+			data: await (
+				await fetch(sendRequest.route, fetchConfiguration)
+			).json(),
+			definedError: undefined,
 		};
 	} catch (error) {
 		return catchError(error);

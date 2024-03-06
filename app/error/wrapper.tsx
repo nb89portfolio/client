@@ -3,9 +3,7 @@
 import { ErrorInfo, ReactNode, useState } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import ErrorFallback from './fallback';
-import defineErrorProperties, {
-	ErrorProperties,
-} from './definedErrorProperties';
+import defineError, { DefinedError } from './definedError';
 import hasDuplicateError from './hasDuplicateError';
 import ErrorOutput from './output';
 import serverSubmit, { ServerResponse } from '../api/serverSubmit';
@@ -13,7 +11,7 @@ import catchError from './catchError';
 
 const initialServerResponse: ServerResponse = {
 	data: '',
-	errorProperties: undefined,
+	definedError: undefined,
 };
 
 export default function ErrorBoundaryWrapper({
@@ -21,13 +19,13 @@ export default function ErrorBoundaryWrapper({
 }: {
 	children: ReactNode;
 }) {
-	const [getErrorRecord, setErrorRecord] = useState<ErrorProperties[]>([]);
+	const [getErrorRecord, setErrorRecord] = useState<DefinedError[]>([]);
 	const [getServerState, setServerState] = useState<ServerResponse>(
 		initialServerResponse
 	);
 
 	function logError(error: Error, info: ErrorInfo) {
-		const errorProperties = defineErrorProperties(error);
+		const errorProperties = defineError(error);
 
 		const foundDuplicateError = hasDuplicateError(
 			errorProperties,
@@ -51,7 +49,7 @@ export default function ErrorBoundaryWrapper({
 		} else {
 			setServerState({
 				data: 'This error has already been reported.',
-				errorProperties: undefined,
+				definedError: undefined,
 			});
 		}
 	}
