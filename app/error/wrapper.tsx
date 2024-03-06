@@ -5,14 +5,24 @@ import { ErrorBoundary } from 'react-error-boundary';
 import ErrorFallback from './fallback';
 import defineError, { DefinedError } from './definedError';
 import hasDuplicateError from './hasDuplicateError';
-import ErrorOutput from './output';
-import serverSubmit, { ServerResponse } from '../api/serverSubmit';
-import catchError from './catchError';
+import catchFatalError from './catchError';
 
-const initialServerResponse: ServerResponse = {
-	data: '',
-	definedError: undefined,
-};
+async function sendServer(sendRequest: DefinedError): Promise<string> {
+	const fetchConfiguration = {
+		method: 'POST',
+		body: JSON.stringify(sendRequest),
+		headers: { 'content-type': 'application/json' },
+	};
+
+	try {
+		const response = await fetch('./api/error', fetchConfiguration);
+		const data = await response.json();
+
+		return data;
+	} catch (error) {
+		return catchFatalError(error);
+	}
+}
 
 export default function ErrorBoundaryWrapper({
 	children,
@@ -20,9 +30,7 @@ export default function ErrorBoundaryWrapper({
 	children: ReactNode;
 }) {
 	const [getErrorRecord, setErrorRecord] = useState<DefinedError[]>([]);
-	const [getServerState, setServerState] = useState<ServerResponse>(
-		initialServerResponse
-	);
+	const [getServerState, setServerState] = useState<string>('');
 
 	function logError(error: Error, info: ErrorInfo) {
 		const errorProperties = defineError(error);
@@ -35,27 +43,20 @@ export default function ErrorBoundaryWrapper({
 		if (!foundDuplicateError) {
 			setErrorRecord([...getErrorRecord, errorProperties]);
 
-			serverSubmit({
-				route: './api/error',
-				method: 'POST',
-				request: errorProperties,
-			})
+			sendServer(errorProperties)
 				.then((response) => {
 					setServerState(response);
 				})
 				.catch((error) => {
-					setServerState(catchError(error));
+					setServerState(catchFatalError(error));
 				});
 		} else {
-			setServerState({
-				data: 'This error has already been reported.',
-				definedError: undefined,
-			});
+			setServerState('This error has already been reported.');
 		}
 	}
 
 	function resetState() {
-		setServerState(initialServerResponse);
+		setServerState('');
 	}
 
 	return (
@@ -66,7 +67,7 @@ export default function ErrorBoundaryWrapper({
 				onReset={resetState}>
 				{children}
 			</ErrorBoundary>
-			<ErrorOutput props={getServerState}></ErrorOutput>
+			<output>{getServerState}</output>
 		</>
 	);
 }
