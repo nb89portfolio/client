@@ -4,29 +4,37 @@ export type ErrorProperties = {
 	stack: string;
 };
 
-function defineErrorString(
-	key: keyof ErrorProperties,
-	condition: 'undefined' | 'unknown'
-): string {
-	return `Error ${key} is ${condition}.`;
+function getUnknownErrorDefinitions(): ErrorProperties {
+	const name = 'Error name is unknown.';
+	const message = 'Error message is unknown.';
+	const stack = 'Error stack is unknown';
+
+	return { name, message, stack };
 }
 
-function defineErrorProperty(error: any, key: keyof ErrorProperties): string {
-	if (error instanceof Error) {
-		if (error[key] !== undefined) {
-			return error[key] as string;
-		} else {
-			return defineErrorString(key, 'undefined');
-		}
-	} else {
-		return defineErrorString(key, 'unknown');
-	}
+function getKnownErrorDefinitions(error: Error): ErrorProperties {
+	const name = error.name;
+	const message = error.message;
+	const stack =
+		error.stack !== undefined ? error.stack : 'Error stack is undefined.';
+
+	return { name, message, stack };
+}
+
+function determineProcess(
+	isTypeError: boolean
+): ((error: Error) => ErrorProperties) | (() => ErrorProperties) {
+	const process = isTypeError
+		? getKnownErrorDefinitions
+		: getUnknownErrorDefinitions;
+
+	return process;
 }
 
 export default function defineErrorProperties(error: any): ErrorProperties {
-	return {
-		name: defineErrorProperty(error, 'name'),
-		message: defineErrorProperty(error, 'message'),
-		stack: defineErrorProperty(error, 'stack'),
-	};
+	const isTypeError = error instanceof Error;
+	const processor = determineProcess(isTypeError);
+	const errorDefinition = processor(error);
+
+	return errorDefinition;
 }

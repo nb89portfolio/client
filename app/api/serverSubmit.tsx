@@ -23,20 +23,24 @@ type FetchConfiguration = {
 
 type ServerRequest = ErrorProperties;
 
+type SendServerRequest = {
+	route: ServerRoute;
+	method: FetchMethod;
+	request: ServerRequest;
+};
+
 export default async function sendServer(
-	route: ServerRoute,
-	method: FetchMethod,
-	request: ServerRequest
+	sendRequest: SendServerRequest
 ): Promise<ServerResponse> {
 	const fetchConfiguration: FetchConfiguration = {
-		method: method,
-		body: JSON.stringify(request),
+		method: sendRequest.method,
+		body: JSON.stringify(sendRequest.request),
 		headers: { 'content-type': 'application/json' },
 	};
 
 	try {
 		return {
-			data: await (await fetch(route, fetchConfiguration)).json(),
+			data: await (await fetch(sendRequest.route, fetchConfiguration)).json(),
 			errorProperties: undefined,
 		};
 	} catch (error) {

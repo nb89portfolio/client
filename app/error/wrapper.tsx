@@ -37,7 +37,11 @@ export default function ErrorBoundaryWrapper({
 		if (!foundDuplicateError) {
 			setErrorRecord([...getErrorRecord, errorProperties]);
 
-			serverSubmit('./api/error', 'POST', errorProperties)
+			serverSubmit({
+				route: './api/error',
+				method: 'POST',
+				request: errorProperties,
+			})
 				.then((response) => {
 					setServerState(response);
 				})

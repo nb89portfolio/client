@@ -4,20 +4,36 @@ function findDuplicateError(
 	error: ErrorProperties,
 	errorList: ErrorProperties[]
 ): ErrorProperties | undefined {
-	return errorList.find((recordedError) => {
-		return error.name === recordedError.name
-			? error.message === recordedError.message
-				? error.stack === recordedError.stack
-					? true
-					: false
-				: false
-			: false;
+	const foundDuplicates = errorList.find((recordedError) => {
+		const isMatch =
+			error.name !== recordedError.name
+				? false
+				: error.message !== recordedError.message
+				? false
+				: error.stack !== recordedError.stack
+				? false
+				: true;
+
+		return isMatch;
 	});
+
+	return foundDuplicates;
+}
+
+function isDuplicateError(
+	foundDuplicateError: ErrorProperties | undefined
+): boolean {
+	const hasDuplciateError = foundDuplicateError !== undefined ? true : false;
+
+	return hasDuplciateError;
 }
 
 export default function hasDuplicateError(
 	error: ErrorProperties,
 	errorList: ErrorProperties[]
 ): boolean {
-	return findDuplicateError(error, errorList) !== undefined;
+	const foundDuplicateErrors = findDuplicateError(error, errorList);
+	const hasDuplicateError = isDuplicateError(foundDuplicateErrors);
+
+	return hasDuplicateError;
 }

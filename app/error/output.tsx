@@ -5,17 +5,28 @@ function defineOutput(serverResponse: ServerResponse): string {
 	if (serverResponse.data !== undefined) {
 		return serverResponse.data as string;
 	} else {
-		if (serverResponse.errorProperties !== undefined) {
+		const isDefined = serverResponse.errorProperties !== undefined;
+
+		if (isDefined) {
 			const { name, message, stack } =
 				serverResponse.errorProperties as ErrorProperties;
 
-			return `Error name "${name}" \nwith error message "${message}" \nand error stack "${stack}"`;
+			const messageName = `Error name "${name}".\n`;
+			const messageMEssage = `Error message "${message}".\n`;
+			const messageStack = `Error stack "${stack}".\n`;
+
+			const buildMEssage = messageName + messageMEssage + messageStack;
+			return buildMEssage;
 		} else {
-			return 'Error: System failed to report error.';
+			const defaultMEssage = 'Error: System failed to report error.';
+
+			return defaultMEssage;
 		}
 	}
 }
 
 export default function ErrorOutput({ props }: { props: ServerResponse }) {
-	return <output>{defineOutput(props)}</output>;
+	const output = defineOutput(props);
+
+	return <output>{output}</output>;
 }
