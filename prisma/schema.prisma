@@ -11,10 +11,11 @@ datasource db {
 }
 
 model Error {
-  id      Int        @id @default(autoincrement())
-  name    String
-  message String
-  stack   String
-  created DateTime
-  updated DateTime[]
+  id       Int      @id @default(autoincrement())
+  name     String
+  message  String
+  stack    String
+  created  DateTime
+  updated  DateTime
+  priority Int      @default(1)
 }

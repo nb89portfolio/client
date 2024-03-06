@@ -5,7 +5,7 @@ import { ErrorBoundary } from 'react-error-boundary';
 import ErrorFallback from './fallback';
 import defineError, { DefinedError } from './definedError';
 import hasDuplicateError from './hasDuplicateError';
-import catchFatalError from './catchError';
+import catchFatalError from './catchFatalError';
 
 async function sendServer(sendRequest: DefinedError): Promise<string> {
 	const fetchConfiguration = {
