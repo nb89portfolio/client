@@ -46,6 +46,6 @@ export async function POST(request: Request) {
 			});
 		}
 	} catch (error) {
-		return catchFatalError(error);
+		return Response.json(catchFatalError(error), { status: 500 });
 	}
 }

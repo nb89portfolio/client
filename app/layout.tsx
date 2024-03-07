@@ -3,6 +3,7 @@ import { Inter } from 'next/font/google';
 import './globals.scss';
 import LoadingWrapper from './loading/wrapper';
 import ErrorBoundaryWrapper from './error/wrapper';
+import Footer from './footer';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -22,6 +23,7 @@ export default function RootLayout({
 				<ErrorBoundaryWrapper>
 					<LoadingWrapper>{children}</LoadingWrapper>
 				</ErrorBoundaryWrapper>
+				<Footer></Footer>
 			</body>
 		</html>
 	);

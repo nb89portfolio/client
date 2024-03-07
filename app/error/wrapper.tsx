@@ -1,11 +1,12 @@
 'use client';
 
-import { ErrorInfo, ReactNode, useState } from 'react';
+import { ErrorInfo, ReactNode } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import ErrorFallback from './fallback';
 import defineError, { DefinedError } from './definedError';
-import hasDuplicateError from './hasDuplicateError';
 import catchFatalError from './catchFatalError';
+import useErrorStore, { ErrorStore } from './store';
+import useApplicationStore, { ApplicationStore } from '../store';
 
 async function sendServer(sendRequest: DefinedError): Promise<string> {
 	const fetchConfiguration = {
@@ -29,34 +30,46 @@ export default function ErrorBoundaryWrapper({
 }: {
 	children: ReactNode;
 }) {
-	const [getErrorRecord, setErrorRecord] = useState<DefinedError[]>([]);
-	const [getServerState, setServerState] = useState<string>('');
+	const errorStore = useErrorStore((state) => state);
+	const applicationStore = useApplicationStore((state) => state);
 
-	function logError(error: Error, info: ErrorInfo) {
-		const errorProperties = defineError(error);
+	function logError(error: any, info: ErrorInfo) {
+		const definedError = defineError(error);
+		const errorList = errorStore.list;
 
-		const foundDuplicateError = hasDuplicateError(
-			errorProperties,
-			getErrorRecord
-		);
+		const foundDuplicateError = errorList.findIndex((error) => {
+			return (
+				error.name === definedError.name &&
+				error.message === definedError.message
+			);
+		});
 
-		if (!foundDuplicateError) {
-			setErrorRecord([...getErrorRecord, errorProperties]);
+		const hasDuplicateError = foundDuplicateError !== -1;
 
-			sendServer(errorProperties)
+		if (hasDuplicateError) {
+			applicationStore.setClientStatus(
+				'Error has already been logged and submitted to server.'
+			);
+		} else {
+			applicationStore.setClientStatus(
+				'Error has been logged and submitted to server.'
+			);
+
+			errorStore.updateList(definedError);
+
+			sendServer(definedError)
 				.then((response) => {
-					setServerState(response);
+					applicationStore.setServerStatus(response);
 				})
 				.catch((error) => {
-					setServerState(catchFatalError(error));
+					applicationStore.setClientStatus(catchFatalError(error));
 				});
-		} else {
-			setServerState('This error has already been reported.');
 		}
 	}
 
 	function resetState() {
-		setServerState('');
+		applicationStore.setClientStatus('Error boundary has been reset.');
+		applicationStore.setServerStatus('');
 	}
 
 	return (
@@ -67,7 +80,6 @@ export default function ErrorBoundaryWrapper({
 				onReset={resetState}>
 				{children}
 			</ErrorBoundary>
-			<output>{getServerState}</output>
 		</>
 	);
 }
