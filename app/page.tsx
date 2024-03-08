@@ -1,12 +1,12 @@
 'use client';
 
 import { useErrorBoundary } from 'react-error-boundary';
-import styles from './page.module.scss';
+import styles from '../styles/index.module.scss';
 
 export default function Home() {
 	const { showBoundary } = useErrorBoundary();
 
-	const error = new Error('test')
+	const error = new Error('test');
 
 	return (
 		<main className={styles.main}>

@@ -10,7 +10,7 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Error {
+model DocumentedError {
   id       Int      @id @default(autoincrement())
   name     String
   message  String

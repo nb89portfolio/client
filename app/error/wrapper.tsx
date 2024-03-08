@@ -1,15 +1,23 @@
 'use client';
 
-import { ErrorInfo, ReactNode } from 'react';
+import { ErrorInfo, ReactNode, cache } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import ErrorFallback from './fallback';
-import defineError, { DefinedError } from './definedError';
-import catchFatalError from './catchFatalError';
-import useErrorStore, { ErrorStore } from './store';
-import useApplicationStore, { ApplicationStore } from '../store';
+import defineError, { DefinedError } from '../../functions/definedError';
+import catchFatalError from '../../functions/catchFatalError';
+import useErrorStore, { ErrorStore } from '../../stores/errorStore';
+import useApplicationStore, {
+	ApplicationStore,
+} from '../../stores/applicationStore';
+
+type FetchConfiguration = {
+	method: 'POST';
+	body: string;
+	headers: { 'content-type': 'application/json' };
+};
 
 async function sendServer(sendRequest: DefinedError): Promise<string> {
-	const fetchConfiguration = {
+	const fetchConfiguration: FetchConfiguration = {
 		method: 'POST',
 		body: JSON.stringify(sendRequest),
 		headers: { 'content-type': 'application/json' },
@@ -18,11 +26,54 @@ async function sendServer(sendRequest: DefinedError): Promise<string> {
 	try {
 		const response = await fetch('./api/error', fetchConfiguration);
 		const data = await response.json();
-
 		return data;
 	} catch (error) {
 		return catchFatalError(error);
 	}
+}
+
+function logError(
+	error: any,
+	info: ErrorInfo,
+	errorStore: ErrorStore,
+	applicationStore: ApplicationStore
+) {
+	const definedError = defineError(error);
+	const errorList = errorStore.list;
+
+	const foundDuplicateError = errorList.findIndex((error) => {
+		return (
+			error.name === definedError.name &&
+			error.message === definedError.message
+		);
+	});
+
+	const hasDuplicateError = foundDuplicateError !== -1;
+
+	if (hasDuplicateError) {
+		applicationStore.setClientStatus(
+			'Error has already been logged and submitted to server.'
+		);
+	} else {
+		applicationStore.setClientStatus(
+			'Error has been logged and submitted to server.'
+		);
+
+		errorStore.updateList(definedError);
+
+		sendServer(definedError)
+			.then((response) => {
+				applicationStore.setServerStatus(response);
+			})
+			.catch((error) => {
+				applicationStore.setClientStatus(catchFatalError(error));
+			});
+	}
+}
+
+function resetState(applicationStore: ApplicationStore) {
+	applicationStore.setClientStatus('Error boundary has been reset.');
+	applicationStore.setServerStatus('');
 }
 
 export default function ErrorBoundaryWrapper({
@@ -33,51 +84,14 @@ export default function ErrorBoundaryWrapper({
 	const errorStore = useErrorStore((state) => state);
 	const applicationStore = useApplicationStore((state) => state);
 
-	function logError(error: any, info: ErrorInfo) {
-		const definedError = defineError(error);
-		const errorList = errorStore.list;
-
-		const foundDuplicateError = errorList.findIndex((error) => {
-			return (
-				error.name === definedError.name &&
-				error.message === definedError.message
-			);
-		});
-
-		const hasDuplicateError = foundDuplicateError !== -1;
-
-		if (hasDuplicateError) {
-			applicationStore.setClientStatus(
-				'Error has already been logged and submitted to server.'
-			);
-		} else {
-			applicationStore.setClientStatus(
-				'Error has been logged and submitted to server.'
-			);
-
-			errorStore.updateList(definedError);
-
-			sendServer(definedError)
-				.then((response) => {
-					applicationStore.setServerStatus(response);
-				})
-				.catch((error) => {
-					applicationStore.setClientStatus(catchFatalError(error));
-				});
-		}
-	}
-
-	function resetState() {
-		applicationStore.setClientStatus('Error boundary has been reset.');
-		applicationStore.setServerStatus('');
-	}
-
 	return (
 		<>
 			<ErrorBoundary
 				FallbackComponent={ErrorFallback}
-				onError={logError}
-				onReset={resetState}>
+				onError={(error, info) =>
+					logError(error, info, errorStore, applicationStore)
+				}
+				onReset={() => resetState(applicationStore)}>
 				{children}
 			</ErrorBoundary>
 		</>

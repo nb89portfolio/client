@@ -1,7 +1,7 @@
 'use client';
 
 import { FallbackProps } from 'react-error-boundary';
-import defineError from './definedError';
+import defineError from '../../functions/definedError';
 
 export default function ErrorFallback({
 	error,

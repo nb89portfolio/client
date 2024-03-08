@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { DefinedError } from './definedError';
+import { DefinedError } from '../functions/definedError';
 
 export type ErrorStore = {
 	list: DefinedError[];
