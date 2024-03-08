@@ -10,11 +10,12 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Error {
-  id      Int        @id @default(autoincrement())
-  name    String
-  message String
-  stack   String
-  created DateTime
-  updated DateTime[]
+model DocumentedError {
+  id       Int      @id @default(autoincrement())
+  name     String
+  message  String
+  stack    String
+  created  DateTime
+  updated  DateTime
+  priority Int      @default(1)
 }
