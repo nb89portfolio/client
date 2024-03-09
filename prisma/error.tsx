@@ -1,4 +1,4 @@
-import { DefinedError } from '@/functions/definedError';
+import defineError, { DefinedError } from '@/functions/definedError';
 import { DocumentedError, PrismaClient } from '@prisma/client';
 import prismaClient from './prisma';
 import catchFatalError from '@/functions/catchFatalError';

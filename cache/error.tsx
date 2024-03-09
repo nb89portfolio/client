@@ -1,46 +1,49 @@
 import { DocumentedError } from '@prisma/client';
-import nodeCache, { buildCacheTTL } from './cache';
+import nodeCache from './cache';
 import { DefinedError } from '@/functions/definedError';
 
 type CacheError = {
-	error: DefinedError[];
-	found: DocumentedError[];
+	reports: DefinedError[];
+	records: DocumentedError[];
 };
 
-export function cacheSetError(
-	error: DefinedError,
-	found: DocumentedError | null
-): boolean {
-	const get = nodeCache.get('error');
-	const parsed = get as CacheError;
-
-	const isNotNull = found !== null;
-
-	const cacheTTL = buildCacheTTL({
-		seconds: 60,
-		minutes: 0,
-		hours: 0,
-	});
-
-	if (isNotNull) {
-		const data: CacheError = {
-			error: [...parsed.error, error],
-			found: [...parsed.found, found],
-		};
-
-		return nodeCache.set('error', data, cacheTTL);
-	} else {
-		const data: CacheError = {
-			error: [...parsed.error, error],
-			found: parsed.found,
-		};
-
-		return nodeCache.set('error', data, cacheTTL);
-	}
+export function cacheGetError(): CacheError | undefined {
+	return nodeCache.get('error') as CacheError | undefined;
 }
 
-export function cacheGetError(): CacheError | undefined {
-	const data = nodeCache.get('error');
+function buildCacheData(
+	oldData: CacheError | undefined,
+	report: DefinedError,
+	record: DocumentedError
+): CacheError {
+	const isDataDefined = oldData !== undefined;
 
-	return data as CacheError | undefined;
+	const reports = isDataDefined ? [...oldData.reports, report] : [report];
+	const records = isDataDefined ? [...oldData.records, record] : [record];
+
+	return { reports, records };
+}
+
+function buildCacheTTL(time: {
+	seconds: number;
+	minutes: number;
+	hours: number;
+}): number {
+	const { hours, minutes, seconds } = time;
+
+	const hourMinutes = hours * 60;
+	const hourSeconds = hourMinutes * 60;
+	const minuteSeconds = minutes * 60;
+
+	return seconds + minuteSeconds + hourSeconds;
+}
+
+export function cacheSetError(report: DefinedError, records: DocumentedError) {
+	const getData = cacheGetError();
+
+	const setData = buildCacheData(getData, report, records);
+
+	const setTTL = buildCacheTTL({ hours: 24, minutes: 0, seconds: 0 });
+
+	return nodeCache.set('error', setData, setTTL);
 }
