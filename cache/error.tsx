@@ -1,5 +1,5 @@
 import { DocumentedError } from '@prisma/client';
-import nodeCache from './cache';
+import nodeCache, { buildCacheTTL } from './cache';
 import { DefinedError } from '@/functions/definedError';
 
 type CacheError = {
@@ -9,17 +9,34 @@ type CacheError = {
 
 export function cacheSetError(
 	error: DefinedError,
-	found: DocumentedError
+	found: DocumentedError | null
 ): boolean {
 	const get = nodeCache.get('error');
 	const parsed = get as CacheError;
 
-	const data: CacheError = {
-		error: [...parsed.error, error],
-		found: [...parsed.found, found],
-	};
+	const isNotNull = found !== null;
 
-	return nodeCache.set('error', data);
+	const cacheTTL = buildCacheTTL({
+		seconds: 60,
+		minutes: 0,
+		hours: 0,
+	});
+
+	if (isNotNull) {
+		const data: CacheError = {
+			error: [...parsed.error, error],
+			found: [...parsed.found, found],
+		};
+
+		return nodeCache.set('error', data, cacheTTL);
+	} else {
+		const data: CacheError = {
+			error: [...parsed.error, error],
+			found: parsed.found,
+		};
+
+		return nodeCache.set('error', data, cacheTTL);
+	}
 }
 
 export function cacheGetError(): CacheError | undefined {

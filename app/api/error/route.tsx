@@ -6,6 +6,50 @@ import {
 	prismaFindError,
 	prismaUpdateError,
 } from '@/prisma/error';
+import { DocumentedError } from '@prisma/client';
+
+function isError(action: string | DocumentedError): Response {
+	const isError = typeof action === 'string';
+
+	if (isError) {
+		return Response.json(action, { status: 500 });
+	} else {
+		return Response.json('Error is updated or created.', { status: 200 });
+	}
+}
+
+async function prismaAction(
+	error: DefinedError,
+	found: DocumentedError | null,
+	foundRecord: boolean
+) {
+	if (foundRecord) {
+		const isNotNull = found !== null;
+		if (isNotNull) {
+			const updateRecord = await prismaUpdateError(found);
+			return isError(updateRecord);
+		} else {
+			return Response.json('Error not found.', { status: 404 });
+		}
+	} else {
+		const createRecord = await prismaCreateError(error);
+		return isError(createRecord);
+	}
+}
+
+async function cacheData(
+	error: DefinedError,
+	found: DocumentedError | null,
+	foundRecord: boolean
+) {
+	const isCached = cacheSetError(error, found);
+
+	if (isCached) {
+		return prismaAction(error, found, foundRecord);
+	} else {
+		return Response.json('Cache failure.', { status: 500 });
+	}
+}
 
 export async function POST(request: Request) {
 	try {
@@ -25,27 +69,7 @@ export async function POST(request: Request) {
 
 			const foundRecord = findInCache !== undefined;
 
-			if (foundRecord) {
-				const updateRecord = await prismaUpdateError(findInCache);
-
-				const isError = typeof updateRecord === 'string';
-
-				if (isError) {
-					return Response.json(updateRecord, { status: 500 });
-				} else {
-					return Response.json('Error updated.', { status: 200 });
-				}
-			} else {
-				const createRecord = await prismaCreateError(error);
-
-				const isError = typeof createRecord === 'string';
-
-				if (isError) {
-					return Response.json(createRecord, { status: 500 });
-				} else {
-					return Response.json('Error created.', { status: 200 });
-				}
-			}
+			return await cacheData(error, null, foundRecord);
 		} else {
 			const findRecord = await prismaFindError(error);
 
@@ -56,37 +80,7 @@ export async function POST(request: Request) {
 			} else {
 				const foundRecord = findRecord !== null;
 
-				if (foundRecord) {
-					const isCached = cacheSetError(error, findRecord);
-
-					if (isCached) {
-						const updateRecord = await prismaUpdateError(
-							findRecord
-						);
-
-						const isError = typeof updateRecord === 'string';
-
-						if (isError) {
-							return Response.json(updateRecord, { status: 500 });
-						} else {
-							return Response.json('Error updated.', {
-								status: 200,
-							});
-						}
-					} else {
-						return Response.json('Cache failure.', { status: 500 });
-					}
-				} else {
-					const createRecord = await prismaCreateError(error);
-
-					const isError = typeof createRecord === 'string';
-
-					if (isError) {
-						return Response.json(createRecord, { status: 500 });
-					} else {
-						return Response.json('Error created.', { status: 200 });
-					}
-				}
+				return await cacheData(error, findRecord, foundRecord);
 			}
 		}
 	} catch (error) {
