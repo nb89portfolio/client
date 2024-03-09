@@ -1,80 +1,97 @@
-import nodeCache from '@/cache/cache';
+import { cacheGetError, cacheSetError } from '@/cache/error';
 import catchFatalError from '@/functions/catchFatalError';
 import { DefinedError } from '@/functions/definedError';
-import prismaClient from '@/prisma/prisma';
-import { DocumentedError } from '@prisma/client';
-
-async function findingDuplicateError(
-	response: DefinedError
-): Promise<DocumentedError | null> {
-	const cacheGet = nodeCache.get('duplicateError');
-	const cacheDefined = cacheGet !== undefined;
-
-	console.log('cacheDefined', cacheDefined);
-
-	if (cacheDefined) {
-		return cacheGet as DocumentedError | null;
-	} else {
-		const findDuplicateError = await prismaClient.documentedError.findFirst(
-			{
-				where: {
-					name: response.name,
-					message: response.message,
-					stack: response.stack,
-				},
-			}
-		);
-
-		return findDuplicateError;
-	}
-}
+import {
+	prismaCreateError,
+	prismaFindError,
+	prismaUpdateError,
+} from '@/prisma/error';
 
 export async function POST(request: Request) {
 	try {
-		const clientRequest: DefinedError = await request.json();
+		const error: DefinedError = await request.json();
 
-		const findDuplicateError = await findingDuplicateError(clientRequest);
+		const cache = cacheGetError();
 
-		const cacheSet = nodeCache.set('duplicateError', findDuplicateError, 0);
+		const cacheDefined = cache !== undefined;
 
-		if (cacheSet) {
-			const foundDuplicateError = findDuplicateError !== null;
+		if (cacheDefined) {
+			const findInCache = cache.found.find((recordedError) => {
+				return (
+					recordedError.name === error.name &&
+					recordedError.message === error.message
+				);
+			});
 
-			if (foundDuplicateError) {
-				await prismaClient.documentedError.update({
-					where: {
-						id: findDuplicateError.id,
-					},
-					data: {
-						updated: new Date(),
-						priority: findDuplicateError.priority + 1,
-					},
-				});
+			const foundRecord = findInCache !== undefined;
 
-				return Response.json('This error has already been reported.', {
-					status: 200,
-				});
+			if (foundRecord) {
+				const updateRecord = await prismaUpdateError(findInCache);
+
+				const isError = typeof updateRecord === 'string';
+
+				if (isError) {
+					return Response.json(updateRecord, { status: 500 });
+				} else {
+					return Response.json('Error updated.', { status: 200 });
+				}
 			} else {
-				await prismaClient.documentedError.create({
-					data: {
-						name: clientRequest.name,
-						message: clientRequest.message,
-						stack: clientRequest.stack,
-						created: new Date(),
-						updated: new Date(),
-					},
-				});
+				const createRecord = await prismaCreateError(error);
 
-				return Response.json('Error has been reported.', {
-					status: 200,
-				});
+				const isError = typeof createRecord === 'string';
+
+				if (isError) {
+					return Response.json(createRecord, { status: 500 });
+				} else {
+					return Response.json('Error created.', { status: 200 });
+				}
 			}
 		} else {
-			return Response.json('Cache error has occurred.', {
-				status: 500,
-			});
+			const findRecord = await prismaFindError(error);
+
+			const isError = typeof findRecord === 'string';
+
+			if (isError) {
+				return Response.json(findRecord, { status: 500 });
+			} else {
+				const foundRecord = findRecord !== null;
+
+				if (foundRecord) {
+					const isCached = cacheSetError(error, findRecord);
+
+					if (isCached) {
+						const updateRecord = await prismaUpdateError(
+							findRecord
+						);
+
+						const isError = typeof updateRecord === 'string';
+
+						if (isError) {
+							return Response.json(updateRecord, { status: 500 });
+						} else {
+							return Response.json('Error updated.', {
+								status: 200,
+							});
+						}
+					} else {
+						return Response.json('Cache failure.', { status: 500 });
+					}
+				} else {
+					const createRecord = await prismaCreateError(error);
+
+					const isError = typeof createRecord === 'string';
+
+					if (isError) {
+						return Response.json(createRecord, { status: 500 });
+					} else {
+						return Response.json('Error created.', { status: 200 });
+					}
+				}
+			}
 		}
 	} catch (error) {
-		return Response.json(catchFatalError(error), { status: 500 });
+		const response = catchFatalError(error);
+
+		return Response.json(response, { status: 500 });
 	}
 }
