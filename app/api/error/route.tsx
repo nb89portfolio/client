@@ -1,80 +1,71 @@
-import nodeCache from '@/cache/cache';
-import catchFatalError from '@/functions/catchFatalError';
+import {
+	nodeCacheFindError,
+	nodeCacheGetError,
+	nodeCacheSetError,
+} from '@/cache/error';
 import { DefinedError } from '@/functions/definedError';
-import prismaClient from '@/prisma/prisma';
+import {
+	prismaCreateError,
+	prismaFindError,
+	prismaUpdateError,
+} from '@/prisma/error';
 import { DocumentedError } from '@prisma/client';
 
-async function findingDuplicateError(
-	response: DefinedError
-): Promise<DocumentedError | null> {
-	const cacheGet = nodeCache.get('duplicateError');
-	const cacheDefined = cacheGet !== undefined;
+async function findDuplicateRecord(
+	definedError: DefinedError,
+	cachedData: DocumentedError[] | undefined
+): Promise<DocumentedError | undefined | null | string> {
+	const isDefined = cachedData !== undefined;
 
-	console.log('cacheDefined', cacheDefined);
+	return isDefined
+		? nodeCacheFindError(definedError, cachedData)
+		: await prismaFindError(definedError);
+}
 
-	if (cacheDefined) {
-		return cacheGet as DocumentedError | null;
-	} else {
-		const findDuplicateError = await prismaClient.documentedError.findFirst(
-			{
-				where: {
-					name: response.name,
-					message: response.message,
-					stack: response.stack,
-				},
-			}
-		);
+function validateFoundRecords(
+	findRecords: DocumentedError | undefined | null | string
+): boolean {
+	return (
+		findRecords !== undefined &&
+		findRecords !== null &&
+		typeof findRecords !== 'string'
+	);
+}
 
-		return findDuplicateError;
-	}
+async function resolveActions(
+	findRecords: DocumentedError | undefined | null | string,
+	definedError: DefinedError
+): Promise<Response> {
+	const isFoundDefined = validateFoundRecords(findRecords);
+
+	const action = isFoundDefined
+		? await prismaUpdateError(findRecords as DocumentedError)
+		: await prismaCreateError(definedError);
+
+	const isError =
+		typeof action === 'string' && action !== undefined && action !== null;
+
+	const isCached = !isError ? nodeCacheSetError(action) : false;
+
+	console.log(isCached);
+
+	const response = isError
+		? action
+		: isCached
+		? 'Error has been reported.'
+		: 'Error with caching.';
+
+	const status = isError ? 500 : isCached ? 200 : 500;
+
+	return Response.json(response, { status });
 }
 
 export async function POST(request: Request) {
-	try {
-		const clientRequest: DefinedError = await request.json();
+	const definedError: DefinedError = await request.json();
 
-		const findDuplicateError = await findingDuplicateError(clientRequest);
+	const cachedData = nodeCacheGetError();
 
-		const cacheSet = nodeCache.set('duplicateError', findDuplicateError, 0);
+	const findRecords = await findDuplicateRecord(definedError, cachedData);
 
-		if (cacheSet) {
-			const foundDuplicateError = findDuplicateError !== null;
-
-			if (foundDuplicateError) {
-				await prismaClient.documentedError.update({
-					where: {
-						id: findDuplicateError.id,
-					},
-					data: {
-						updated: new Date(),
-						priority: findDuplicateError.priority + 1,
-					},
-				});
-
-				return Response.json('This error has already been reported.', {
-					status: 200,
-				});
-			} else {
-				await prismaClient.documentedError.create({
-					data: {
-						name: clientRequest.name,
-						message: clientRequest.message,
-						stack: clientRequest.stack,
-						created: new Date(),
-						updated: new Date(),
-					},
-				});
-
-				return Response.json('Error has been reported.', {
-					status: 200,
-				});
-			}
-		} else {
-			return Response.json('Cache error has occurred.', {
-				status: 500,
-			});
-		}
-	} catch (error) {
-		return Response.json(catchFatalError(error), { status: 500 });
-	}
+	return await resolveActions(findRecords, definedError);
 }

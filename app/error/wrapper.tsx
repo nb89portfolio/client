@@ -1,6 +1,6 @@
 'use client';
 
-import { ErrorInfo, ReactNode, cache } from 'react';
+import { ErrorInfo, ReactNode } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import ErrorFallback from './fallback';
 import defineError, { DefinedError } from '../../functions/definedError';
@@ -25,11 +25,19 @@ async function sendServer(sendRequest: DefinedError): Promise<string> {
 
 	try {
 		const response = await fetch('./api/error', fetchConfiguration);
-		const data = await response.json();
-		return data;
+		return await response.json();
 	} catch (error) {
 		return catchFatalError(error);
 	}
+}
+
+function findError(definedError: DefinedError, errorList: DefinedError[]) {
+	return errorList.findIndex((error) => {
+		return (
+			error.name === definedError.name &&
+			error.message === definedError.message
+		);
+	});
 }
 
 function logError(
@@ -39,26 +47,18 @@ function logError(
 	applicationStore: ApplicationStore
 ) {
 	const definedError = defineError(error);
-	const errorList = errorStore.list;
 
-	const foundDuplicateError = errorList.findIndex((error) => {
-		return (
-			error.name === definedError.name &&
-			error.message === definedError.message
-		);
-	});
+	const foundDuplicateError = findError(definedError, errorStore.list);
 
 	const hasDuplicateError = foundDuplicateError !== -1;
 
-	if (hasDuplicateError) {
-		applicationStore.setClientStatus(
-			'Error has already been logged and submitted to server.'
-		);
-	} else {
-		applicationStore.setClientStatus(
-			'Error has been logged and submitted to server.'
-		);
+	const clientStatus = hasDuplicateError
+		? 'Error has already been logged and submitted to server.'
+		: 'Error has been logged and submitted to server.';
 
+	applicationStore.setClientStatus(clientStatus);
+
+	if (!hasDuplicateError) {
 		errorStore.updateList(definedError);
 
 		sendServer(definedError)
@@ -66,7 +66,8 @@ function logError(
 				applicationStore.setServerStatus(response);
 			})
 			.catch((error) => {
-				applicationStore.setClientStatus(catchFatalError(error));
+				const message = catchFatalError(error);
+				applicationStore.setClientStatus(message);
 			});
 	}
 }
