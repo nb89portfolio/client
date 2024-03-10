@@ -1,5 +1,3 @@
-import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
-
 export type DefinedError = {
 	name: string;
 	message: string;
@@ -7,9 +5,7 @@ export type DefinedError = {
 };
 
 export default function defineError(error: any): DefinedError {
-	const isError =
-		error instanceof Error ||
-		error instanceof PrismaClientKnownRequestError;
+	const isError = error instanceof Error;
 
 	if (isError) {
 		const { name, message } = error;

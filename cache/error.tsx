@@ -2,26 +2,21 @@ import { DocumentedError } from '@prisma/client';
 import nodeCache from './cache';
 import { DefinedError } from '@/functions/definedError';
 
-type CacheError = {
-	reports: DefinedError[];
-	records: DocumentedError[];
-};
-
-export function cacheGetError(): CacheError | undefined {
-	return nodeCache.get('error') as CacheError | undefined;
+export function nodeCacheGetError(): DocumentedError[] | undefined {
+	const data = nodeCache.get('error');
+	const assert = data as DocumentedError[] | undefined;
+	return assert;
 }
 
 function buildCacheData(
-	oldData: CacheError | undefined,
-	report: DefinedError,
-	record: DocumentedError
-): CacheError {
-	const isDataDefined = oldData !== undefined;
+	cachedData: DocumentedError[] | undefined,
+	documentedError: DocumentedError
+): DocumentedError[] {
+	const isCacheDefined = cachedData !== undefined;
 
-	const reports = isDataDefined ? [...oldData.reports, report] : [report];
-	const records = isDataDefined ? [...oldData.records, record] : [record];
-
-	return { reports, records };
+	return isCacheDefined
+		? [...cachedData, documentedError]
+		: [documentedError];
 }
 
 function buildCacheTTL(time: {
@@ -38,12 +33,24 @@ function buildCacheTTL(time: {
 	return seconds + minuteSeconds + hourSeconds;
 }
 
-export function cacheSetError(report: DefinedError, records: DocumentedError) {
-	const getData = cacheGetError();
+export function nodeCacheSetError(documentedError: DocumentedError): boolean {
+	const cachedData = nodeCacheGetError();
 
-	const setData = buildCacheData(getData, report, records);
+	const setData = buildCacheData(cachedData, documentedError);
 
 	const setTTL = buildCacheTTL({ hours: 24, minutes: 0, seconds: 0 });
 
 	return nodeCache.set('error', setData, setTTL);
+}
+
+export function nodeCacheFindError(
+	definedError: DefinedError,
+	cachedData: DocumentedError[]
+): DocumentedError | undefined {
+	return cachedData.find((error) => {
+		return (
+			error.name === definedError.name &&
+			error.message === definedError.message
+		);
+	});
 }
